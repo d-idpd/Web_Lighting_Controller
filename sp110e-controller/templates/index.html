@@ -1148,11 +1148,32 @@ function updateEffectLoop() {
 }
 
 async function applyDefaults() {
+  if (IS_DEMO) {
+    const newState = {};
+    for (const zid of ZONE_ORDER) {
+      const cfg = ZONES_CONFIG[zid];
+      if (cfg.type === 'rgb') {
+        newState[zid] = { ...appState[zid], on: true, brightness: 102, color: { r: 128, g: 0, b: 128 }, effect: null };
+      } else {
+        newState[zid] = { ...appState[zid], on: true, brightness: 153, kelvin: 4250, effect: null };
+      }
+    }
+    applyState(newState);
+    return;
+  }
   const data = await apiPost('/group/all/defaults', {});
   if (data) applyState(data);
 }
 
 async function partyMode() {
+  if (IS_DEMO) {
+    const newState = {};
+    for (const zid of ZONE_ORDER) {
+      newState[zid] = { ...appState[zid], on: true, effect: 4, speed: Math.round(0.6 * 255) };
+    }
+    applyState(newState);
+    return;
+  }
   const data = await apiPost('/group/all/party', {});
   if (data) applyState(data);
 }
