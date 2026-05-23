@@ -1,151 +1,182 @@
 # SP110E Kitchen Cabinet Lighting Controller
 
-A locally-hosted web app that controls 6 SP110E Bluetooth LED strip controllers across two sides of a kitchen. Your PC bridges Bluetooth to the lights; any device on the same WiFi can use the web UI.
+A locally-hosted web app that controls 6 SP110E Bluetooth LED strip controllers across two sides of a kitchen. A Raspberry Pi Zero W bridges Bluetooth to the lights; any device on the same WiFi can use the web UI.
+
+**Live demo:** [idpd.us/Web_Lighting_Controller/sp110e-controller/templates/index.html](https://idpd.us/Web_Lighting_Controller/sp110e-controller/templates/index.html)
 
 ---
 
 ## Prerequisites
 
-- Windows PC with Bluetooth LE support
+- Raspberry Pi Zero W (or any Pi with Bluetooth)
 - Python 3.9 or newer
 - 6× SP110E controllers installed and powered on
 
 ---
 
+## Pi Setup (first time)
+
+```bash
+chmod +x setup.sh && ./setup.sh
+```
+
+This installs all dependencies, sets Bluetooth permissions, and registers a systemd service so the server starts automatically on boot.
+
+---
+
 ## Quick Start
 
-### 1. Install dependencies
+### 1. Find your SP110E Bluetooth addresses
 
-```
-pip install -r requirements.txt
-```
-
-### 2. Find your SP110E Bluetooth addresses
-
-```
-python scan.py
+```bash
+python3 scan.py
 ```
 
 Look for devices named `SP110E` (or anything with the `FFE0` BLE service). Note each address.
 
-> **Important:** Do NOT pair the SP110E in Windows Bluetooth settings. bleak connects directly by MAC address without OS pairing. If you already paired them, unpair first.
+> **Important:** Do NOT pair the SP110E in OS Bluetooth settings. bleak connects directly by MAC address without OS pairing.
 
-### 3. Split your kitchen mask images into zone masks
+### 2. Read current device config (optional)
 
-Place your source images in the parent folder (already done if you cloned this repo), then run:
-
-```
-python split_masks.py
+```bash
+python3 get_config.py AA:BB:CC:DD:EE:01
 ```
 
-This reads `../LeftMask.png` and `../RightMask.png`, auto-detects the three brightness bands (top accent / under-cabinet / toe-kick), and writes 6 zone mask files to `static/images/`. It also copies the base images.
+Reads and prints the IC model, pixel count, sequence, and current state from a device. Useful for confirming the LED type before setting `type` in `config.json`.
 
-Review the output masks. If any zone is missing or merged with another, re-shoot your mask photo with stronger contrast between zones.
-
-### 4. Edit config.json with your actual BLE addresses
+### 3. Edit config.json with your actual BLE addresses
 
 ```json
 {
   "zones": {
     "left-top":  { "address": "AA:BB:CC:DD:EE:01", "type": "rgb",     "label": "Left Top" },
     "left-mid":  { "address": "AA:BB:CC:DD:EE:02", "type": "tunable", "label": "Left Mid" },
-    ...
+    "left-bot":  { "address": "AA:BB:CC:DD:EE:03", "type": "tunable", "label": "Left Bottom" },
+    "right-top": { "address": "AA:BB:CC:DD:EE:04", "type": "rgb",     "label": "Right Top" },
+    "right-mid": { "address": "AA:BB:CC:DD:EE:05", "type": "tunable", "label": "Right Mid" },
+    "right-bot": { "address": "AA:BB:CC:DD:EE:06", "type": "tunable", "label": "Right Bottom" }
   }
 }
 ```
 
-Replace each `AA:BB:CC:DD:EE:XX` with the real address from step 2.
+Set `"type"` to `"rgb"` for full-color zones and `"tunable"` for white-temperature zones.
+
+### 4. Generate zone mask images
+
+Run on your PC (requires Pillow):
+
+```bash
+python split_masks.py
+```
+
+This reads `../LeftMask.png` and `../RightMask.png`, auto-detects the three brightness bands per side, and writes 8 files to `static/images/`. Sync the `static/images/` folder to the Pi after running.
 
 ### 5. Run the server
 
+```bash
+python3 app.py
 ```
-python app.py
-```
-
-The console prints the local URL, e.g.:
 
 ```
 ════════════════════════════════════════════════
   SP110E Controller
-  Server running at http://192.168.1.42:5000
+  Server running at http://192.168.1.30:5000
   Open this URL on your phone
 ════════════════════════════════════════════════
 ```
 
 Open that URL on any device on the same WiFi network.
 
+### 6. Run as a background service (auto-start on boot)
+
+```bash
+sudo systemctl start sp110e
+sudo journalctl -u sp110e -f   # view logs
+```
+
+---
+
+## LED Types
+
+### RGB zones (`type: "rgb"`)
+Full color control — color wheel, 120 effect presets, speed slider.
+
+### Tunable white zones (`type: "tunable"`)
+SK6812_RGBW or similar 2-channel cool/amber strips. The temperature slider maps:
+- **2000K** → full amber (R=0, G=255, B=0 on device)
+- **6500K** → full cool white (R=255, G=0, B=0 on device)
+
+The exact R/G/B → LED channel mapping depends on your device's sequence setting. Use `get_config.py` to read the sequence, then test with `python3 tests/test_ble_control.py <address> --interactive` to confirm which channel is which.
+
 ---
 
 ## Image Assets
 
-The visualizer overlays colored light onto photos of your kitchen. You need:
+The visualizer overlays colored light onto photos of your kitchen. Required files in `static/images/`:
 
 | File | Description |
 |---|---|
-| `static/images/left-base.png`    | Left side, lights off |
-| `static/images/left-mask-top.png`  | Grayscale mask — left top accent zone |
-| `static/images/left-mask-mid.png`  | Grayscale mask — left under-cabinet zone |
-| `static/images/left-mask-bot.png`  | Grayscale mask — left toe-kick zone |
-| `static/images/right-base.png`   | Right side, lights off |
-| `static/images/right-mask-top.png` | Grayscale mask — right top accent zone |
-| `static/images/right-mask-mid.png` | Grayscale mask — right under-cabinet zone |
-| `static/images/right-mask-bot.png` | Grayscale mask — right toe-kick zone |
+| `left-base.png` | Left side, lights off |
+| `left-mask-top.png` | Grayscale mask — left top accent zone |
+| `left-mask-mid.png` | Grayscale mask — left under-cabinet zone |
+| `left-mask-bot.png` | Grayscale mask — left toe-kick zone |
+| `right-base.png` | Right side, lights off |
+| `right-mask-top.png` | Grayscale mask — right top accent zone |
+| `right-mask-mid.png` | Grayscale mask — right under-cabinet zone |
+| `right-mask-bot.png` | Grayscale mask — right toe-kick zone |
 
-`split_masks.py` generates all of these automatically from your combined `LeftMask.png` / `RightMask.png` source photos.
+`split_masks.py` generates all of these automatically from combined `LeftMask.png` / `RightMask.png` source photos.
 
-### How to make better masks manually (optional)
+### Making masks manually (optional)
 
-If the auto-split result doesn't look right, create masks manually in any image editor:
-
-1. Start with a photo taken with **only one zone lit** at a time (e.g. only the top accent strip on)
+1. Photograph the kitchen with **only one zone lit** at a time
 2. Desaturate to grayscale
-3. Use Levels/Curves to push dark/unlit areas to pure black (0) and keep the lit area bright (near 255)
-4. Export as PNG — the brighter the lit region, the more the color overlay will show there
+3. Use Levels/Curves to push dark areas to pure black (0) — lit areas stay bright (near 255)
+4. Export as PNG
 
 ---
 
 ## Features
 
 ### Day / Night Toggle
-The toggle in the top-right corner darkens the base kitchen image so the colored light overlays look more vivid (simulating low ambient light). Drag the darkness slider to your preference.
-
-### Zone Popup
-Tap any zone on the visualizer or any zone card to open the popup:
-- **RGB zones** (top accent): full color wheel, 120 effect presets, speed slider
-- **Tunable white zones** (under-cabinet, toe-kick): warm↔cool color temperature slider (3000K–6000K)
+Defaults to Night at 75% darkness. Day mode keeps a 30% base darkening so the light overlays stay readable. The slider adds darkness on top of that floor.
 
 ### Global Controls
-- Master power button (all zones on/off)
-- Brightness sliders for all zones, top zones, mid zones, bottom zones independently
+- **Master power** — all zones on/off
+- **Defaults** — sets RGB zones to purple at 40% brightness, tunable zones to 4250K at 60% brightness
+- **Party** — sets all zones to rainbow strobe (effect 4) at 60% speed
+- **Brightness sliders** — All / Top / Mid / Bottom independently
 
-### GitHub Pages / Demo Mode
-Add `?demo=true` to the URL to enable demo mode — a red banner appears at the top and all API calls are no-ops (the UI still animates fully). Useful for portfolio links.
+### Zone Cards
+Each zone has a power toggle, brightness slider, and a color swatch (RGB) or temperature slider (tunable). Tap to open the full zone popup.
+
+### Zone Popup
+- **RGB zones:** color wheel, 120 named effects, speed slider
+- **Tunable zones:** warm↔cool temperature slider (2000K–6500K)
+
+### Connection Stability
+Zones that drop show an amber dot and keep their last-known color on the canvas — the visualizer doesn't go dark on a brief disconnect. Reconnect is event-driven: a scan fires ~4 seconds after any disconnect rather than waiting a fixed interval.
+
+### Demo Mode
+The site auto-detects when it's not running on the local Flask server (port 5000) and enters demo mode — all API calls are no-ops, the UI animates fully. Visiting the live link above shows the demo automatically.
 
 ---
 
 ## Testing
 
-### Test 1 — BLE scan & connect (no hardware required for scan)
-
 ```bash
-python tests/test_ble_connect.py
-python tests/test_ble_connect.py AA:BB:CC:DD:EE:01
+# Scan for nearby SP110E devices
+python3 scan.py
+
+# Read device config
+python3 get_config.py AA:BB:CC:DD:EE:01
+
+# BLE control test — automated sequence
+python3 tests/test_ble_control.py AA:BB:CC:DD:EE:01
+
+# BLE control test — interactive REPL
+python3 tests/test_ble_control.py AA:BB:CC:DD:EE:01 --interactive
 ```
-
-### Test 2 — RGB control sequence
-
-```bash
-python tests/test_ble_control.py AA:BB:CC:DD:EE:01
-python tests/test_ble_control.py AA:BB:CC:DD:EE:01 --interactive
-```
-
-### Test 3 — Full UI with mock BLE (no hardware needed)
-
-```bash
-python tests/test_ui_mock.py
-```
-
-All controls work; BLE commands are logged to console instead of sent.
 
 ---
 
@@ -153,11 +184,12 @@ All controls work; BLE commands are logged to console instead of sent.
 
 | Problem | Fix |
 |---|---|
-| `bleak` can't find devices | Make sure SP110E is powered on. Do NOT pair in Windows Bluetooth settings. |
-| Zone shows as offline | The SP110E may be off or out of range. The server retries once per minute automatically. |
-| Visualizer shows black canvas | Run `split_masks.py` to generate the zone mask images into `static/images/`. |
-| "Address already in use" on port 5000 | Another process is using port 5000. Kill it or change the port in `app.py`. |
-| Colors look wrong on canvas | Adjust tap regions in the JS `TAP_REGIONS` config in `index.html` if zones don't line up with your image. |
+| No Bluetooth adapter found | Run `sudo hciconfig hci0 up`. Install `pi-bluetooth` if missing. |
+| Zone shows as offline at startup | SP110E may be off or out of range. Reconnect scan fires automatically after ~4s. |
+| Zone keeps disconnecting | The device can't handle rapid BLE writes. The write worker rate-limits to 100ms/command and coalesces same-type commands. |
+| Visualizer shows black canvas | Run `split_masks.py` on PC, then sync `static/images/` to the Pi. |
+| Colors look wrong | Check sequence setting with `get_config.py` and adjust `type` in `config.json`. |
+| "Address already in use" on port 5000 | Another process holds port 5000. `sudo systemctl stop sp110e` or change the port in `app.py`. |
 
 ---
 
@@ -168,14 +200,15 @@ sp110e-controller/
 ├── app.py                  Flask server + BLE manager
 ├── config.json             BLE addresses per zone (edit once)
 ├── scan.py                 Scan for nearby SP110E devices
+├── get_config.py           Read current config from a device
 ├── split_masks.py          Auto-split combined masks into zone masks
+├── setup.sh                Pi first-time setup script
 ├── requirements.txt
 ├── static/
-│   └── images/             Zone masks + base images go here
+│   └── images/             Zone masks + base images
 ├── templates/
 │   └── index.html          Full web UI (single file, no build tools)
 └── tests/
     ├── test_ble_connect.py
-    ├── test_ble_control.py
-    └── test_ui_mock.py
+    └── test_ble_control.py
 ```

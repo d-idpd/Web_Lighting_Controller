@@ -52,6 +52,7 @@ html, body {
 }
 #demo-banner.visible { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; }
 #demo-back-btn {
+  display: inline-block;
   background: rgba(255,255,255,0.15);
   border: 1px solid rgba(255,255,255,0.3);
   color: #fff;
@@ -61,6 +62,7 @@ html, body {
   font-size: 13px;
   cursor: pointer;
   white-space: nowrap;
+  text-decoration: none;
 }
 #demo-back-btn:hover { background: rgba(255,255,255,0.25); }
 
@@ -701,7 +703,7 @@ input[type=range].temp-range::-moz-range-thumb {
 <!-- Demo banner (shown when ?demo=true) -->
 <div id="demo-banner">
   <span>This is a portfolio demo — no lights are actually being controlled.</span>
-  <button id="demo-back-btn" onclick="window.location.href='https://idpd.us'">← Back to IDPD.US</button>
+  <a id="demo-back-btn" href="https://idpd.us/#projects">← Return to Projects</a>
 </div>
 
 <div class="container">
@@ -830,9 +832,9 @@ let nightDarkness = 75; // percent
 let activePopupZone = null;
 
 // ── Demo mode ──────────────────────────────────────────────────────────────
-const IS_DEMO = new URLSearchParams(window.location.search).has('demo') ||
-                window.location.hostname.endsWith('github.io') ||
-                window.location.protocol === 'file:';
+// Demo mode: any host that isn't the local Flask server (port 5000)
+const IS_DEMO = window.location.port !== '5000' ||
+                new URLSearchParams(window.location.search).has('demo');
 if (IS_DEMO) {
   document.getElementById('demo-banner').classList.add('visible');
 }
@@ -873,12 +875,8 @@ function loadImages() {
   const promises = IMG_NAMES.map(name => new Promise(resolve => {
     const img = new Image();
     const ext = '.png';
-    // Flask serves from /static/images/; GH Pages root serves the file one level up
-    const basePath = IS_DEMO
-      ? (window.location.hostname.endsWith('github.io')
-          ? 'sp110e-controller/static/images/'
-          : 'static/images/')
-      : '/static/images/';
+    // Flask: absolute /static/images/  |  demo: up one level from templates/
+    const basePath = IS_DEMO ? '../static/images/' : '/static/images/';
     img.src = basePath + name + ext;
     img.onload  = () => { images[name] = img; resolve(); };
     img.onerror = () => { images[name] = null; resolve(); };
