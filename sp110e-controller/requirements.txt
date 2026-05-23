@@ -1,5 +1,3 @@
+bleak
 flask
 flask-cors
-bleak
-Pillow
-numpy

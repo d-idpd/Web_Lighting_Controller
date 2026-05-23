@@ -37,7 +37,11 @@ log = logging.getLogger(__name__)
 # ──────────────────────────────────────────────────────────────────────────────
 # Constants
 # ──────────────────────────────────────────────────────────────────────────────
-CONFIG_PATH = Path(__file__).parent / "config.json"
+# Prefer system-wide config (installed via install_service.sh); fall back to
+# local copy for running directly from the source directory.
+_SYSTEM_CONFIG = Path("/etc/web_lighting_controller/config.json")
+_LOCAL_CONFIG  = Path(__file__).parent / "config.json"
+CONFIG_PATH = _SYSTEM_CONFIG if _SYSTEM_CONFIG.exists() else _LOCAL_CONFIG
 
 WRITE_CHAR = "0000ffe1-0000-1000-8000-00805f9b34fb"
 READ_CHAR  = "0000ffe2-0000-1000-8000-00805f9b34fb"
