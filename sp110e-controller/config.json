@@ -1,0 +1,10 @@
+{
+  "zones": {
+    "left-top":  { "address": "CA:AC:02:04:22:BE", "type": "rgb",     "label": "Left Top" },
+    "left-mid":  { "address": "16:61:05:70:5A:11", "type": "tunable", "label": "Left Mid" },
+    "left-bot":  { "address": "CA:AC:02:04:32:24", "type": "tunable", "label": "Left Bottom" },
+    "right-top": { "address": "0C:FC:85:0B:BC:23", "type": "rgb",     "label": "Right Top" },
+    "right-mid": { "address": "CA:AC:02:04:3D:1C", "type": "tunable",     "label": "Right Mid" },
+    "right-bot": { "address": "00:00:00:00:00:00", "type": "tunable", "label": "Right Bottom" }
+  }
+}

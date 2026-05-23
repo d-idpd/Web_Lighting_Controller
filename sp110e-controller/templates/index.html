@@ -1,0 +1,1722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Kitchen Lights</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ── Reset & base ──────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:          #0a0a0a;
+  --surface:     #141414;
+  --surface2:    #1e1e1e;
+  --border:      #2a2a2a;
+  --accent:      #e8a020;
+  --accent-dim:  #7a5010;
+  --text:        #e8e8e8;
+  --text-dim:    #888;
+  --text-muted:  #555;
+  --green:       #28c760;
+  --red:         #e84040;
+  --radius:      12px;
+  --radius-sm:   8px;
+}
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 16px;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Demo banner ───────────────────────────────────────────────────────── */
+#demo-banner {
+  display: none;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: #7a2020;
+  border-bottom: 1px solid #b03030;
+  padding: 10px 16px;
+  text-align: center;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  color: #ffcccc;
+}
+#demo-banner.visible { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; }
+#demo-back-btn {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: #fff;
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+#demo-back-btn:hover { background: rgba(255,255,255,0.25); }
+
+/* ── Layout ────────────────────────────────────────────────────────────── */
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 16px 12px 40px;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding: 0 4px;
+}
+.page-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* ── Day/Night toggle ──────────────────────────────────────────────────── */
+.daynight-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-dim);
+  cursor: pointer;
+  user-select: none;
+}
+.daynight-toggle .icon { font-size: 18px; line-height: 1; }
+.toggle-pill {
+  width: 44px;
+  height: 24px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  position: relative;
+  transition: background 0.25s;
+  cursor: pointer;
+}
+.toggle-pill.night { background: var(--accent-dim); }
+.toggle-pill::after {
+  content: '';
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 16px; height: 16px;
+  background: var(--text-dim);
+  border-radius: 50%;
+  transition: transform 0.25s, background 0.25s;
+}
+.toggle-pill.night::after { transform: translateX(20px); background: var(--accent); }
+
+/* ── Night darkness slider ─────────────────────────────────────────────── */
+#night-control {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+#night-control.visible { display: flex; }
+#night-slider {
+  flex: 1;
+  accent-color: var(--accent);
+}
+#night-value { min-width: 34px; text-align: right; color: var(--text); font-weight: 600; }
+
+/* ── Visualizer ────────────────────────────────────────────────────────── */
+.visualizer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+@media (max-width: 500px) {
+  .visualizer { grid-template-columns: 1fr; }
+}
+.vis-side { position: relative; border-radius: var(--radius); overflow: hidden; background: #000; cursor: pointer; }
+.vis-side canvas { display: block; width: 100%; height: auto; }
+.vis-label {
+  position: absolute;
+  top: 8px; left: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.6);
+  text-shadow: 0 1px 3px #000;
+  pointer-events: none;
+}
+
+/* ── Cards / sections ──────────────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+.card-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 14px;
+}
+
+/* ── Global controls ───────────────────────────────────────────────────── */
+.global-power-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.global-power-label {
+  font-size: 16px;
+  font-weight: 600;
+}
+.power-btn {
+  min-width: 80px;
+  height: 44px;
+  border: none;
+  border-radius: 22px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+  padding: 0 20px;
+}
+.power-btn.on  { background: var(--accent); color: #000; box-shadow: 0 0 12px rgba(232,160,32,0.4); }
+.power-btn.off { background: var(--surface2); color: var(--text-dim); }
+.defaults-btn {
+  height: 44px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--surface2);
+  color: var(--text-dim);
+  transition: background 0.15s, opacity 0.1s;
+  letter-spacing: 0.5px;
+}
+.defaults-btn:active { opacity: 0.7; }
+.party-btn {
+  height: 44px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  background: linear-gradient(135deg, #f00, #f80, #ff0, #0f0, #0ff, #00f, #f0f);
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  transition: opacity 0.1s;
+  letter-spacing: 0.5px;
+}
+.party-btn:active { opacity: 0.7; }
+
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.slider-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dim);
+  min-width: 52px;
+  letter-spacing: 0.5px;
+}
+.slider-label .pct { font-size: 12px; color: var(--text-muted); margin-left: 4px; }
+input[type=range] {
+  flex: 1;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--border);
+  border-radius: 2px;
+  outline: none;
+  accent-color: var(--accent);
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px rgba(232,160,32,0.5);
+  cursor: pointer;
+}
+input[type=range]::-moz-range-thumb {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: none;
+  cursor: pointer;
+}
+
+/* ── Zone cards ────────────────────────────────────────────────────────── */
+.zone-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+@media (max-width: 380px) {
+  .zone-grid { grid-template-columns: 1fr; }
+}
+.zone-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  transition: border-color 0.2s;
+}
+.zone-card.offline { opacity: 0.45; }
+.zone-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.zone-card-name {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  flex-shrink: 0;
+}
+.status-dot.connected    { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.status-dot.offline      { background: var(--text-muted); }
+.status-dot.reconnecting { background: #f5a623; box-shadow: 0 0 6px #f5a62366; }
+.zone-card-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.zone-color-swatch {
+  width: 18px; height: 18px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+  align-self: center;
+}
+.zone-temp-mini {
+  flex: 1;
+  height: 44px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  outline: none;
+  cursor: pointer;
+}
+.zone-temp-mini::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, #ffb347, #fff5e0, #cce8ff);
+}
+.zone-temp-mini::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--bg);
+  box-shadow: 0 0 6px rgba(0,0,0,0.5);
+  cursor: pointer;
+  margin-top: -6px;
+}
+.zone-temp-mini::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, #ffb347, #fff5e0, #cce8ff);
+}
+.zone-temp-mini::-moz-range-thumb {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--bg);
+  box-shadow: 0 0 6px rgba(0,0,0,0.5);
+  cursor: pointer;
+}
+.zone-hue-mini {
+  flex: 1;
+  height: 44px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  outline: none;
+  cursor: pointer;
+}
+.zone-hue-mini::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right,
+    hsl(0,100%,50%), hsl(30,100%,50%), hsl(60,100%,50%), hsl(90,100%,50%),
+    hsl(120,100%,50%), hsl(150,100%,50%), hsl(180,100%,50%), hsl(210,100%,50%),
+    hsl(240,100%,50%), hsl(270,100%,50%), hsl(300,100%,50%), hsl(330,100%,50%), hsl(360,100%,50%));
+}
+.zone-hue-mini::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--bg);
+  box-shadow: 0 0 6px rgba(0,0,0,0.5);
+  cursor: pointer;
+  margin-top: -6px;
+}
+.zone-hue-mini::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right,
+    hsl(0,100%,50%), hsl(30,100%,50%), hsl(60,100%,50%), hsl(90,100%,50%),
+    hsl(120,100%,50%), hsl(150,100%,50%), hsl(180,100%,50%), hsl(210,100%,50%),
+    hsl(240,100%,50%), hsl(270,100%,50%), hsl(300,100%,50%), hsl(330,100%,50%), hsl(360,100%,50%));
+}
+.zone-hue-mini::-moz-range-thumb {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--bg);
+  box-shadow: 0 0 6px rgba(0,0,0,0.5);
+  cursor: pointer;
+}
+/* kept for popup color preview only */
+.zone-temp-indicator {
+  position: absolute;
+  top: -3px;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--bg);
+  transform: translateX(-50%);
+  box-shadow: 0 0 4px rgba(0,0,0,0.5);
+}
+.zone-card-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.zone-power-btn {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+  flex-shrink: 0;
+}
+.zone-power-btn.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 8px rgba(232,160,32,0.4);
+}
+.zone-brightness-mini {
+  flex: 1;
+  height: 44px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+.zone-brightness-mini::-webkit-slider-runnable-track {
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+}
+.zone-brightness-mini::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px rgba(232,160,32,0.4);
+  cursor: pointer;
+  margin-top: -8px;
+}
+.zone-brightness-mini::-moz-range-track {
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+}
+.zone-brightness-mini::-moz-range-thumb {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: none;
+  cursor: pointer;
+}
+
+/* ── Popup / bottom sheet ──────────────────────────────────────────────── */
+#overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 100;
+  backdrop-filter: blur(2px);
+}
+#overlay.visible { display: block; }
+
+#popup {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border-radius: var(--radius) var(--radius) 0 0;
+  border-top: 1px solid var(--border);
+  padding: 0 0 env(safe-area-inset-bottom, 16px);
+  z-index: 101;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  max-height: 82vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+#popup.open { transform: translateY(0); }
+
+.popup-handle {
+  width: 36px; height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 10px auto 0;
+}
+.popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px 8px;
+  border-bottom: 1px solid var(--border);
+}
+.popup-title { font-size: 18px; font-weight: 700; }
+.popup-type-badge {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 10px;
+  background: var(--surface2);
+  color: var(--text-dim);
+}
+.popup-body { padding: 16px; }
+
+.popup-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.popup-row-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dim);
+  min-width: 80px;
+  letter-spacing: 0.5px;
+}
+.popup-power-btn {
+  width: 56px; height: 44px;
+  border-radius: 22px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s;
+}
+.popup-power-btn.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #000;
+  box-shadow: 0 0 12px rgba(232,160,32,0.4);
+}
+
+/* ── Color picker (HSL wheel canvas) ──────────────────────────────────── */
+.color-picker-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+#color-wheel-canvas {
+  border-radius: 50%;
+  cursor: crosshair;
+  touch-action: none;
+  box-shadow: 0 0 24px rgba(0,0,0,0.6);
+}
+.color-preview {
+  width: 100%; height: 44px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+/* ── Color temp slider ─────────────────────────────────────────────────── */
+.temp-slider-wrap { margin-bottom: 16px; }
+.temp-track {
+  width: 100%;
+  height: 44px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.temp-track::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(to right, #ffb347, #fff5e0, #cce8ff);
+  pointer-events: none;
+}
+input[type=range].temp-range {
+  width: 100%;
+  height: 44px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  outline: none;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  padding: 0;
+}
+input[type=range].temp-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--bg);
+  box-shadow: 0 0 8px rgba(0,0,0,0.5);
+  cursor: pointer;
+}
+input[type=range].temp-range::-moz-range-thumb {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--bg);
+  box-shadow: 0 0 8px rgba(0,0,0,0.5);
+  cursor: pointer;
+}
+.temp-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 10px;
+}
+.temp-value {
+  text-align: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-top: 4px;
+}
+
+/* ── Effects grid ──────────────────────────────────────────────────────── */
+.effects-section { margin-bottom: 4px; }
+.effects-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+.effects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.effect-btn {
+  height: 36px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface2);
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 6px;
+}
+.effect-btn:hover { border-color: var(--accent-dim); color: var(--text); }
+.effect-btn.active { background: var(--accent); border-color: var(--accent); color: #000; }
+.speed-row { display: none; }
+.speed-row.visible { display: flex; }
+
+</style>
+</head>
+<body>
+
+<!-- Demo banner (shown when ?demo=true) -->
+<div id="demo-banner">
+  <span>This is a portfolio demo — no lights are actually being controlled.</span>
+  <button id="demo-back-btn" onclick="window.location.href='https://idpd.us'">← Back to IDPD.US</button>
+</div>
+
+<div class="container">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div class="page-title">Kitchen Lights</div>
+    <div class="daynight-toggle" id="daynight-toggle">
+      <span class="icon" id="dn-icon">🌙</span>
+      <div class="toggle-pill night" id="dn-pill"></div>
+      <span id="dn-label">Night</span>
+    </div>
+  </div>
+
+  <!-- Night darkness control -->
+  <div id="night-control" style="display:flex">
+    <span>Night darkness</span>
+    <input type="range" id="night-slider" min="0" max="100" value="75">
+    <span id="night-value">75%</span>
+  </div>
+
+  <!-- Visualizer -->
+  <div class="visualizer">
+    <div class="vis-side" id="vis-left">
+      <canvas id="canvas-left" width="600" height="400"></canvas>
+      <div class="vis-label">Left</div>
+    </div>
+    <div class="vis-side" id="vis-right">
+      <canvas id="canvas-right" width="600" height="400"></canvas>
+      <div class="vis-label">Right</div>
+    </div>
+  </div>
+
+  <!-- Global controls -->
+  <div class="card">
+    <div class="card-title">Global Controls</div>
+    <div class="global-power-row">
+      <span class="global-power-label">All Zones</span>
+      <button class="power-btn off" id="master-power-btn" onclick="masterPower()">OFF</button>
+      <button class="defaults-btn" onclick="applyDefaults()">Defaults</button>
+      <button class="party-btn" onclick="partyMode()">Party</button>
+    </div>
+    <div class="slider-row">
+      <span class="slider-label">All <span class="pct" id="all-pct">78%</span></span>
+      <input type="range" id="slider-all" min="0" max="255" value="200">
+    </div>
+    <div class="slider-row">
+      <span class="slider-label">Top <span class="pct" id="top-pct">78%</span></span>
+      <input type="range" id="slider-top" min="0" max="255" value="200">
+    </div>
+    <div class="slider-row">
+      <span class="slider-label">Mid <span class="pct" id="mid-pct">78%</span></span>
+      <input type="range" id="slider-mid" min="0" max="255" value="200">
+    </div>
+    <div class="slider-row">
+      <span class="slider-label">Bot <span class="pct" id="bot-pct">78%</span></span>
+      <input type="range" id="slider-bot" min="0" max="255" value="200">
+    </div>
+  </div>
+
+  <!-- Zone cards -->
+  <div class="card">
+    <div class="card-title">Zones</div>
+    <div class="zone-grid" id="zone-grid"></div>
+  </div>
+
+</div>
+
+<!-- Overlay + popup -->
+<div id="overlay" onclick="closePopup()"></div>
+<div id="popup">
+  <div class="popup-handle"></div>
+  <div class="popup-header">
+    <span class="popup-title" id="popup-title">Zone</span>
+    <span class="popup-type-badge" id="popup-badge">RGB</span>
+  </div>
+  <div class="popup-body" id="popup-body"></div>
+</div>
+
+<script>
+// ── Config ─────────────────────────────────────────────────────────────────
+const ZONE_ORDER = ['left-top','left-mid','left-bot','right-top','right-mid','right-bot'];
+const ZONES_CONFIG = {
+  'left-top':  { label:'Left Top',    type:'rgb',     side:'left' },
+  'left-mid':  { label:'Left Mid',    type:'tunable', side:'left' },
+  'left-bot':  { label:'Left Bottom', type:'tunable', side:'left' },
+  'right-top': { label:'Right Top',   type:'rgb',     side:'right' },
+  'right-mid': { label:'Right Mid',   type:'tunable', side:'right' },
+  'right-bot': { label:'Right Bottom',type:'tunable', side:'right' },
+};
+
+// Tap regions for visualizer (percentage-based: [x%, y%, w%, h%])
+// Adjust these if your image layout differs.
+const TAP_REGIONS = {
+  left: {
+    'left-top': [0, 0,    100, 28],
+    'left-mid': [0, 28,   100, 44],
+    'left-bot': [0, 72,   100, 28],
+  },
+  right: {
+    'right-top': [0, 0,    100, 28],
+    'right-mid': [0, 28,   100, 44],
+    'right-bot': [0, 72,   100, 28],
+  }
+};
+
+const EFFECT_NAMES = {
+  0:  'Static Color',
+  1:  'Rainbow',       2:  'Rainbow Fade',   3:  'Rainbow Strobe',
+  4:  'RGB Fade',      5:  'Red Fade',        6:  'Green Fade',
+  7:  'Blue Fade',     8:  'Yellow Fade',     9:  'Cyan Fade',
+  10: 'Purple Fade',   11: 'White Fade',      12: 'Red Strobe',
+  13: 'Green Strobe',  14: 'Blue Strobe',     15: 'Yellow Strobe',
+  16: 'Cyan Strobe',   17: 'Purple Strobe',   18: 'White Strobe',
+  19: 'Red Chase',     20: 'Green Chase',     21: 'Blue Chase',
+  22: 'Yellow Chase',  23: 'Cyan Chase',      24: 'Purple Chase',
+  25: 'White Chase',   26: 'Rainbow Chase',   27: 'Fire',
+  28: 'Twinkle',       29: 'Meteor',          30: 'Comet',
+};
+for (let i = 31; i <= 120; i++) EFFECT_NAMES[i] = `Effect ${i}`;
+
+// ── State ──────────────────────────────────────────────────────────────────
+let appState = {};
+let isNightMode = true;
+let nightDarkness = 75; // percent
+let activePopupZone = null;
+
+// ── Demo mode ──────────────────────────────────────────────────────────────
+const IS_DEMO = new URLSearchParams(window.location.search).has('demo') ||
+                window.location.hostname.endsWith('github.io') ||
+                window.location.protocol === 'file:';
+if (IS_DEMO) {
+  document.getElementById('demo-banner').classList.add('visible');
+}
+
+// In demo mode, stub out API calls so everything works but nothing is sent
+async function apiPost(url, body) {
+  if (IS_DEMO) {
+    // Simulate a realistic response from the mock state
+    await new Promise(r => setTimeout(r, 60));
+    return { ok: true };
+  }
+  try {
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    return r.json();
+  } catch (e) { console.warn('API error:', e); }
+}
+
+async function apiGet(url) {
+  if (IS_DEMO) return null;
+  try {
+    const r = await fetch(url);
+    return r.json();
+  } catch (e) { console.warn('API error:', e); return null; }
+}
+
+// ── Image loading ──────────────────────────────────────────────────────────
+const images = {};
+const IMG_NAMES = [
+  'left-base','left-mask-top','left-mask-mid','left-mask-bot',
+  'right-base','right-mask-top','right-mask-mid','right-mask-bot',
+];
+
+function loadImages() {
+  const promises = IMG_NAMES.map(name => new Promise(resolve => {
+    const img = new Image();
+    const ext = '.png';
+    // Flask serves from /static/images/; GH Pages root serves the file one level up
+    const basePath = IS_DEMO
+      ? (window.location.hostname.endsWith('github.io')
+          ? 'sp110e-controller/static/images/'
+          : 'static/images/')
+      : '/static/images/';
+    img.src = basePath + name + ext;
+    img.onload  = () => { images[name] = img; resolve(); };
+    img.onerror = () => { images[name] = null; resolve(); };
+  }));
+  return Promise.all(promises);
+}
+
+// ── Canvas rendering ───────────────────────────────────────────────────────
+const canvases = {
+  left:  document.getElementById('canvas-left'),
+  right: document.getElementById('canvas-right'),
+};
+const ctxs = {
+  left:  canvases.left.getContext('2d'),
+  right: canvases.right.getContext('2d'),
+};
+
+// Offscreen canvas for crossfade
+const offscreen = {
+  left:  document.createElement('canvas'),
+  right: document.createElement('canvas'),
+};
+offscreen.left.width  = canvases.left.width;
+offscreen.left.height = canvases.left.height;
+offscreen.right.width  = canvases.right.width;
+offscreen.right.height = canvases.right.height;
+
+// Canvas display only — visually represents warm amber → neutral → cool white.
+// NOT the BLE command (that uses R=warm, G=0, B=cool and lives in app.py).
+function kelvinToDisplayColor(kelvin) {
+  const t = (kelvin - 2000) / 4500;  // 0 = 2000K amber, 1 = 6500K cool
+  return {
+    r: Math.round(255 - t * 35),   // 255 → 220
+    g: Math.round(100 + t * 135),  // 100 → 235
+    b: Math.round(20  + t * 235),  // 20  → 255
+  };
+}
+
+function hueToRgb(h) {
+  const s = 1, l = 0.5;
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+  const m = l - c / 2;
+  let r = 0, g = 0, b = 0;
+  if      (h < 60)  { r = c; g = x; b = 0; }
+  else if (h < 120) { r = x; g = c; b = 0; }
+  else if (h < 180) { r = 0; g = c; b = x; }
+  else if (h < 240) { r = 0; g = x; b = c; }
+  else if (h < 300) { r = x; g = 0; b = c; }
+  else              { r = c; g = 0; b = x; }
+  return { r: Math.round((r + m) * 255), g: Math.round((g + m) * 255), b: Math.round((b + m) * 255) };
+}
+
+function rgbToHue(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+  if (d === 0) return 0;
+  let h;
+  if      (max === r) h = ((g - b) / d + 6) % 6 * 60;
+  else if (max === g) h = ((b - r) / d + 2) * 60;
+  else                h = ((r - g) / d + 4) * 60;
+  return Math.round(h);
+}
+
+function getZoneColor(zid, zstate) {
+  if (!zstate.on) return null;
+  const cfg = ZONES_CONFIG[zid];
+  if (cfg.type === 'rgb') {
+    if (zstate.effect != null) {
+      return hueToRgb((Date.now() / 30) % 360);
+    }
+    return zstate.color || { r: 255, g: 255, b: 255 };
+  } else {
+    if (zstate.effect != null) {
+      // Oscillate between full amber (2000K) and cool white (6500K)
+      const t = (Math.sin(Date.now() / 250) + 1) / 2;
+      return kelvinToDisplayColor(2000 + t * 4500);
+    }
+    return kelvinToDisplayColor(zstate.kelvin || 4000);
+  }
+}
+
+function renderSide(side) {
+  const w = canvases[side].width;
+  const h = canvases[side].height;
+  const offCtx = offscreen[side].getContext('2d');
+
+  offCtx.clearRect(0, 0, w, h);
+
+  // Draw base
+  const base = images[`${side}-base`];
+  if (base) {
+    offCtx.drawImage(base, 0, 0, w, h);
+    // Base 30% darkening always applied; night mode adds up to 70% more on top
+    const darkness = isNightMode ? (0.30 + (nightDarkness / 100) * 0.70) : 0.30;
+    offCtx.fillStyle = `rgba(0,0,0,${darkness})`;
+    offCtx.fillRect(0, 0, w, h);
+  } else {
+    offCtx.fillStyle = '#111';
+    offCtx.fillRect(0, 0, w, h);
+  }
+
+  // Overlay each zone mask tinted with zone color
+  const zoneSuffix = { top: 'top', mid: 'mid', bot: 'bot' };
+  const sideZones = ZONE_ORDER.filter(zid => ZONES_CONFIG[zid].side === side);
+
+  for (const zid of sideZones) {
+    const zstate = appState[zid];
+    if (!zstate || zstate.status === 'offline') continue;
+
+    const part = zid.split('-')[1]; // top / mid / bot
+    const mask = images[`${side}-mask-${part}`];
+    if (!mask) continue;
+
+    const color = getZoneColor(zid, zstate);
+    if (!color) continue;
+
+    const brightness = (zstate.brightness ?? 200) / 255;
+    const r = Math.round(color.r * brightness);
+    const g = Math.round(color.g * brightness);
+    const b = Math.round(color.b * brightness);
+
+    // Build tinted glow: fill with zone color, multiply grayscale mask over it
+    // so black mask areas collapse to black (no light added), bright areas keep
+    // the color. Screen the result onto the base — screen(black, base) = base.
+    const tmp = document.createElement('canvas');
+    tmp.width = w; tmp.height = h;
+    const tmpCtx = tmp.getContext('2d');
+
+    tmpCtx.fillStyle = `rgb(${r},${g},${b})`;
+    tmpCtx.fillRect(0, 0, w, h);
+
+    tmpCtx.globalCompositeOperation = 'multiply';
+    tmpCtx.drawImage(mask, 0, 0, w, h);
+    tmpCtx.globalCompositeOperation = 'source-over';
+
+    offCtx.globalCompositeOperation = 'screen';
+    offCtx.drawImage(tmp, 0, 0);
+    offCtx.globalCompositeOperation = 'source-over';
+  }
+
+  // Crossfade to visible canvas
+  crossfade(side, offscreen[side]);
+}
+
+let fadeRAFs = { left: null, right: null };
+function crossfade(side, src) {
+  const ctx = ctxs[side];
+  const w = canvases[side].width;
+  const h = canvases[side].height;
+  if (fadeRAFs[side]) cancelAnimationFrame(fadeRAFs[side]);
+  const start = performance.now();
+  const DURATION = 150;
+
+  // Capture current
+  const prev = document.createElement('canvas');
+  prev.width = w; prev.height = h;
+  prev.getContext('2d').drawImage(canvases[side], 0, 0);
+
+  function step(now) {
+    const t = Math.min((now - start) / DURATION, 1);
+    ctx.clearRect(0, 0, w, h);
+    ctx.globalAlpha = 1;
+    ctx.drawImage(prev, 0, 0);
+    ctx.globalAlpha = t;
+    ctx.drawImage(src, 0, 0);
+    ctx.globalAlpha = 1;
+    if (t < 1) fadeRAFs[side] = requestAnimationFrame(step);
+  }
+  fadeRAFs[side] = requestAnimationFrame(step);
+}
+
+function renderAll() {
+  renderSide('left');
+  renderSide('right');
+}
+
+// ── Zone cards ─────────────────────────────────────────────────────────────
+function buildZoneCards() {
+  const grid = document.getElementById('zone-grid');
+  grid.innerHTML = '';
+  // Interleave left/right so 2-col grid reads left-top/mid/bot in col 1, right in col 2
+  const cardOrder = ['left-top','right-top','left-mid','right-mid','left-bot','right-bot'];
+  for (const zid of cardOrder) {
+    const cfg = ZONES_CONFIG[zid];
+    const card = document.createElement('div');
+    card.className = 'zone-card';
+    card.id = `card-${zid}`;
+    const initC = 'rgb(138,43,226)';
+    const sliderRow = cfg.type === 'rgb'
+      ? `<div class="zone-color-swatch" id="zswatch-${zid}" style="background:${initC}"></div>
+         <input type="range" class="zone-hue-mini" id="zhue-${zid}"
+                min="0" max="360" value="274"
+                oninput="zoneHueInput('${zid}', this.value)">`
+      : `<input type="range" class="zone-temp-mini" id="ztmp-${zid}"
+                min="2000" max="6500" value="4000" step="100"
+                oninput="zoneTempInput('${zid}', this.value)">`;
+    card.innerHTML = `
+      <div class="zone-card-header">
+        <span class="zone-card-name">${cfg.label}</span>
+        <span class="status-dot" id="dot-${zid}"></span>
+      </div>
+      <div class="zone-card-row">
+        <button class="zone-power-btn" id="zpwr-${zid}" onclick="zoneTogglePower('${zid}')">⏻</button>
+        <input type="range" class="zone-brightness-mini" id="zbri-${zid}"
+               min="0" max="255" value="200"
+               oninput="zoneBrightnessInput('${zid}', this.value)">
+      </div>
+      <div class="zone-card-row" style="gap:6px;padding:0 2px">
+        ${sliderRow}
+      </div>`;
+    grid.appendChild(card);
+  }
+}
+
+function updateZoneCard(zid, zstate) {
+  const cfg = ZONES_CONFIG[zid];
+  const card = document.getElementById(`card-${zid}`);
+  if (!card) return;
+
+  card.className = `zone-card ${zstate.status === 'offline' ? 'offline' : ''}`;
+  document.getElementById(`dot-${zid}`).className = `status-dot ${zstate.status}`;
+  document.getElementById(`zpwr-${zid}`).className = `zone-power-btn ${zstate.on ? 'on' : 'off'}`;
+
+  const bri = document.getElementById(`zbri-${zid}`);
+  if (bri) bri.value = zstate.on ? (zstate.brightness ?? 200) : 0;
+
+  if (cfg.type === 'rgb') {
+    const hasEffect = zstate.effect != null;
+    const c = zstate.color || { r: 138, g: 43, b: 226 };
+    const swatch = document.getElementById(`zswatch-${zid}`);
+    if (swatch) swatch.style.background = hasEffect
+      ? 'linear-gradient(to right,#f00,#f80,#ff0,#0f0,#0ff,#00f,#f0f,#f00)'
+      : `rgb(${c.r},${c.g},${c.b})`;
+    const hueEl = document.getElementById(`zhue-${zid}`);
+    if (hueEl && !hasEffect) hueEl.value = rgbToHue(c.r, c.g, c.b);
+  } else {
+    const tmp = document.getElementById(`ztmp-${zid}`);
+    if (tmp) tmp.value = zstate.kelvin || 4000;
+  }
+}
+
+// ── State update ───────────────────────────────────────────────────────────
+function applyState(newState) {
+  let changed = false;
+  for (const zid of ZONE_ORDER) {
+    if (newState[zid]) {
+      const prev = JSON.stringify(appState[zid]);
+      appState[zid] = newState[zid];
+      if (prev !== JSON.stringify(appState[zid])) changed = true;
+      updateZoneCard(zid, appState[zid]);
+    }
+  }
+  if (changed) renderAll();
+  updateMasterBtn();
+  updateEffectLoop();
+}
+
+let effectInterval = null;
+function updateEffectLoop() {
+  const hasActive = ZONE_ORDER.some(z =>
+    appState[z]?.on && appState[z]?.effect != null && appState[z]?.status === 'connected');
+  if (hasActive && !effectInterval) {
+    effectInterval = setInterval(() => { renderAll(); updateZoneCards(true); }, 40);
+  } else if (!hasActive && effectInterval) {
+    clearInterval(effectInterval);
+    effectInterval = null;
+  }
+}
+
+async function applyDefaults() {
+  const data = await apiPost('/group/all/defaults', {});
+  if (data) applyState(data);
+}
+
+async function partyMode() {
+  const data = await apiPost('/group/all/party', {});
+  if (data) applyState(data);
+}
+
+function initDemoState() {
+  for (const zid of ZONE_ORDER) {
+    const cfg = ZONES_CONFIG[zid];
+    appState[zid] = {
+      status: 'connected',
+      on: true,
+      brightness: 200,
+      ...(cfg.type === 'rgb'
+        ? { color: { r: 138, g: 43, b: 226 }, effect: null, speed: 128, kelvin: 4000 }
+        : { kelvin: 4000 })
+    };
+  }
+  buildZoneCards();
+  applyState(appState);
+}
+
+// ── Polling ────────────────────────────────────────────────────────────────
+async function pollStatus() {
+  if (IS_DEMO) return;
+  const data = await apiGet('/status');
+  if (data) applyState(data);
+}
+
+// ── Master power ───────────────────────────────────────────────────────────
+let masterOn = false;
+function updateMasterBtn() {
+  masterOn = ZONE_ORDER.some(z => appState[z]?.on);
+  const btn = document.getElementById('master-power-btn');
+  btn.textContent = masterOn ? 'ON' : 'OFF';
+  btn.className = `power-btn ${masterOn ? 'on' : 'off'}`;
+}
+
+async function masterPower() {
+  const newOn = !masterOn;
+  for (const zid of ZONE_ORDER) if (appState[zid]) appState[zid].on = newOn;
+  updateZoneCards();
+  renderAll();
+  updateMasterBtn();
+  await apiPost('/group/all/power', { on: newOn });
+}
+
+// ── Group sliders ──────────────────────────────────────────────────────────
+function pct(v) { return Math.round(v / 255 * 100) + '%'; }
+
+function setGroupSliderDOM(groupId, val) {
+  const sliderMap = { all: 'slider-all', top: 'slider-top', mid: 'slider-mid', bot: 'slider-bot' };
+  const pctMap    = { all: 'all-pct',   top: 'top-pct',    mid: 'mid-pct',    bot: 'bot-pct'    };
+  const el = document.getElementById(sliderMap[groupId]);
+  if (el) el.value = val;
+  const pctEl = document.getElementById(pctMap[groupId]);
+  if (pctEl) pctEl.textContent = pct(val);
+}
+
+function bindGroupSlider(id, group, pctId) {
+  let timer = null;
+  document.getElementById(id).addEventListener('input', e => {
+    const val = parseInt(e.target.value);
+    document.getElementById(pctId).textContent = pct(val);
+    const zones = group === 'all' ? ZONE_ORDER
+      : group === 'top' ? ['left-top','right-top']
+      : group === 'mid' ? ['left-mid','right-mid']
+      : ['left-bot','right-bot'];
+    for (const zid of zones) if (appState[zid]) appState[zid].brightness = val;
+    renderAll();
+    updateZoneCards(true);  // skip syncGroupSliders — user is actively dragging this slider
+    // All → sync Top/Mid/Bot sliders to the same value
+    if (group === 'all') {
+      setGroupSliderDOM('top', val);
+      setGroupSliderDOM('mid', val);
+      setGroupSliderDOM('bot', val);
+    }
+    clearTimeout(timer);
+    timer = setTimeout(() => apiPost(`/group/${group}/brightness`, { value: val }), 300);
+  });
+}
+
+function updateZoneCards(skipGroupSync = false) {
+  for (const zid of ZONE_ORDER) if (appState[zid]) updateZoneCard(zid, appState[zid]);
+  if (!skipGroupSync) syncGroupSliders();
+}
+
+function syncGroupSliders() {
+  const groups = {
+    all: ZONE_ORDER,
+    top: ['left-top','right-top'],
+    mid: ['left-mid','right-mid'],
+    bot: ['left-bot','right-bot'],
+  };
+  for (const [group, zones] of Object.entries(groups)) {
+    const onZones = zones.filter(z => appState[z]?.on);
+    if (onZones.length === 0) {
+      setGroupSliderDOM(group, 0);
+    } else {
+      const avg = Math.round(onZones.reduce((s, z) => s + (appState[z]?.brightness ?? 200), 0) / onZones.length);
+      setGroupSliderDOM(group, avg);
+    }
+  }
+}
+
+// ── Zone power (card) ──────────────────────────────────────────────────────
+let zonePwrTimers = {};
+async function zoneTogglePower(zid) {
+  if (!appState[zid]) return;
+  const newOn = !appState[zid].on;
+  appState[zid].on = newOn;
+  updateZoneCard(zid, appState[zid]);
+  syncGroupSliders();
+  renderSide(ZONES_CONFIG[zid].side);
+  await apiPost(`/zone/${zid}/power`, { on: newOn });
+}
+
+// ── Zone brightness (card mini slider) ────────────────────────────────────
+let zoneBriTimers = {};
+function zoneBrightnessInput(zid, val) {
+  if (!appState[zid]) return;
+  appState[zid].brightness = parseInt(val);
+  renderSide(ZONES_CONFIG[zid].side);
+  clearTimeout(zoneBriTimers[zid]);
+  zoneBriTimers[zid] = setTimeout(() => apiPost(`/zone/${zid}/brightness`, { value: parseInt(val) }), 300);
+}
+
+let zoneTempTimers = {};
+function zoneTempInput(zid, val) {
+  if (!appState[zid]) return;
+  const k = parseInt(val);
+  appState[zid].kelvin = k;
+  renderSide(ZONES_CONFIG[zid].side);
+  clearTimeout(zoneTempTimers[zid]);
+  zoneTempTimers[zid] = setTimeout(() => apiPost(`/zone/${zid}/temperature`, { kelvin: k }), 300);
+}
+
+let zoneHueTimers = {};
+function zoneHueInput(zid, val) {
+  if (!appState[zid]) return;
+  const col = hueToRgb(parseInt(val));
+  appState[zid].color = col;
+  appState[zid].effect = null;
+  const swatch = document.getElementById(`zswatch-${zid}`);
+  if (swatch) swatch.style.background = `rgb(${col.r},${col.g},${col.b})`;
+  renderSide(ZONES_CONFIG[zid].side);
+  clearTimeout(zoneHueTimers[zid]);
+  zoneHueTimers[zid] = setTimeout(() => apiPost(`/zone/${zid}/color`, col), 300);
+}
+
+// ── Day/Night toggle ───────────────────────────────────────────────────────
+document.getElementById('daynight-toggle').addEventListener('click', () => {
+  isNightMode = !isNightMode;
+  const pill = document.getElementById('dn-pill');
+  const icon = document.getElementById('dn-icon');
+  const label = document.getElementById('dn-label');
+  const ctrl = document.getElementById('night-control');
+  pill.className = `toggle-pill ${isNightMode ? 'night' : ''}`;
+  icon.textContent = isNightMode ? '🌙' : '☀️';
+  label.textContent = isNightMode ? 'Night' : 'Day';
+  ctrl.className = `${isNightMode ? 'visible' : ''}`; // show/hide darkness slider
+  document.getElementById('night-control').style.display = isNightMode ? 'flex' : 'none';
+  renderAll();
+});
+
+document.getElementById('night-slider').addEventListener('input', e => {
+  nightDarkness = parseInt(e.target.value);
+  document.getElementById('night-value').textContent = nightDarkness + '%';
+  renderAll();
+});
+
+// ── Canvas tap ─────────────────────────────────────────────────────────────
+function addCanvasTap(side) {
+  const canvas = canvases[side];
+  canvas.addEventListener('click', e => {
+    const rect = canvas.getBoundingClientRect();
+    const xPct = (e.clientX - rect.left) / rect.width * 100;
+    const yPct = (e.clientY - rect.top)  / rect.height * 100;
+    const regions = TAP_REGIONS[side];
+    for (const [zid, [rx, ry, rw, rh]] of Object.entries(regions)) {
+      if (xPct >= rx && xPct <= rx + rw && yPct >= ry && yPct <= ry + rh) {
+        openPopup(zid);
+        return;
+      }
+    }
+  });
+}
+
+// ── Popup ──────────────────────────────────────────────────────────────────
+function openPopup(zid) {
+  activePopupZone = zid;
+  const cfg = ZONES_CONFIG[zid];
+  const zstate = appState[zid] || {};
+
+  document.getElementById('popup-title').textContent = cfg.label;
+  document.getElementById('popup-badge').textContent = cfg.type === 'rgb' ? 'RGB' : 'Tunable White';
+
+  const body = document.getElementById('popup-body');
+  if (cfg.type === 'rgb') {
+    body.innerHTML = buildRgbPopup(zid, zstate);
+    initColorWheel(zid, zstate);
+    updateEffectButtons(zstate.effect);
+  } else {
+    body.innerHTML = buildTunablePopup(zid, zstate);
+    initTempSlider(zid, zstate);
+  }
+
+  document.getElementById('overlay').classList.add('visible');
+  document.getElementById('popup').classList.add('open');
+}
+
+function closePopup() {
+  document.getElementById('overlay').classList.remove('visible');
+  document.getElementById('popup').classList.remove('open');
+  activePopupZone = null;
+}
+
+// Swipe down to close
+let touchStartY = 0;
+document.getElementById('popup').addEventListener('touchstart', e => {
+  touchStartY = e.touches[0].clientY;
+}, { passive: true });
+document.getElementById('popup').addEventListener('touchend', e => {
+  if (e.changedTouches[0].clientY - touchStartY > 60) closePopup();
+});
+
+// ── RGB popup ──────────────────────────────────────────────────────────────
+function buildRgbPopup(zid, zstate) {
+  const on = zstate.on;
+  const c = zstate.color || { r: 255, g: 140, b: 0 };
+  const bri = zstate.brightness || 200;
+  const speed = zstate.speed || 128;
+  const k = zstate.kelvin || 4000;
+  const hasEffect = zstate.effect && zstate.effect > 0;
+
+  let effectBtns = `<button class="effect-btn ${!hasEffect ? 'active' : ''}" onclick="setEffect(0)">Static Color</button>`;
+  for (let i = 1; i <= 120; i++) {
+    effectBtns += `<button class="effect-btn ${zstate.effect === i ? 'active' : ''}" id="eff-btn-${i}" onclick="setEffect(${i})">${EFFECT_NAMES[i]}</button>`;
+  }
+
+  return `
+    <div class="popup-row">
+      <span class="popup-row-label">Power</span>
+      <button class="popup-power-btn ${on ? 'on' : 'off'}" id="pp-power" onclick="popupTogglePower()">${on ? 'ON' : 'OFF'}</button>
+    </div>
+    <div class="popup-row">
+      <span class="popup-row-label">Brightness</span>
+      <input type="range" style="flex:1" id="pp-bri" min="0" max="255" value="${bri}">
+      <span id="pp-bri-val" style="min-width:36px;text-align:right;font-weight:600">${Math.round(bri/255*100)}%</span>
+    </div>
+    <div class="color-picker-wrap">
+      <canvas id="color-wheel-canvas" width="220" height="220"></canvas>
+      <div class="color-preview" id="color-preview" style="background:rgb(${c.r},${c.g},${c.b});color:${luminance(c)>0.4?'#000':'#fff'}">
+        rgb(${c.r}, ${c.g}, ${c.b})
+      </div>
+    </div>
+    <div class="temp-slider-wrap">
+      <div style="font-size:13px;font-weight:600;color:var(--text-dim);margin-bottom:4px;letter-spacing:0.5px">White Temperature</div>
+      <div class="temp-track">
+        <input type="range" class="temp-range" id="pp-temp" min="2000" max="6500" value="${k}" step="100">
+      </div>
+      <div class="temp-labels"><span>2000K Amber</span><span>6500K Cool</span></div>
+      <div class="temp-value" id="pp-temp-val">${k}K</div>
+    </div>
+    <div class="effects-section">
+      <div class="effects-label">Effects</div>
+      <div class="effects-grid" id="effects-grid">${effectBtns}</div>
+    </div>
+    <div class="slider-row speed-row ${hasEffect ? 'visible' : ''}" id="speed-row">
+      <span class="slider-label" style="min-width:52px">Speed</span>
+      <input type="range" style="flex:1" id="pp-speed" min="0" max="255" value="${speed}">
+      <span id="pp-speed-val" style="min-width:36px;text-align:right;font-weight:600">${Math.round(speed/255*100)}%</span>
+    </div>`;
+}
+
+function luminance(c) {
+  return (0.299*c.r + 0.587*c.g + 0.114*c.b) / 255;
+}
+
+// ── Color wheel ────────────────────────────────────────────────────────────
+function initColorWheel(zid, zstate) {
+  const canvas = document.getElementById('color-wheel-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const cx = W / 2, cy = H / 2, r = Math.min(cx, cy) - 4;
+
+  // Draw hue+saturation wheel
+  for (let angle = 0; angle < 360; angle++) {
+    const rad = (angle - 90) * Math.PI / 180;
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    grad.addColorStop(0, `hsl(${angle},0%,100%)`);
+    grad.addColorStop(1, `hsl(${angle},100%,50%)`);
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, rad, rad + Math.PI / 180 * 1.5);
+    ctx.closePath();
+    ctx.fillStyle = grad;
+    ctx.fill();
+  }
+
+  // Brightness mask
+  const dark = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+  dark.addColorStop(0, 'rgba(0,0,0,0)');
+  dark.addColorStop(1, 'rgba(0,0,0,0.5)');
+  ctx.fillStyle = dark;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Clip to circle
+  ctx.globalCompositeOperation = 'destination-in';
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalCompositeOperation = 'source-over';
+
+  // Cursor marker
+  const c = zstate.color || { r: 255, g: 140, b: 0 };
+  drawWheelCursor(ctx, cx, cy, r, c);
+
+  function pickColor(e) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = W / rect.width;
+    const scaleY = H / rect.height;
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const x = (clientX - rect.left) * scaleX - cx;
+    const y = (clientY - rect.top)  * scaleY - cy;
+    const dist = Math.sqrt(x*x + y*y);
+    if (dist > r) return;
+
+    const pixel = ctx.getImageData(
+      Math.round(x + cx), Math.round(y + cy), 1, 1).data;
+    const col = { r: pixel[0], g: pixel[1], b: pixel[2] };
+
+    // Update preview
+    const prev = document.getElementById('color-preview');
+    if (prev) {
+      prev.style.background = `rgb(${col.r},${col.g},${col.b})`;
+      prev.style.color = luminance(col) > 0.4 ? '#000' : '#fff';
+      prev.textContent = `rgb(${col.r}, ${col.g}, ${col.b})`;
+    }
+
+    // Update local state and render
+    if (appState[zid]) {
+      appState[zid].color = col;
+      appState[zid].effect = null;
+      updateZoneCard(zid, appState[zid]);
+      renderSide(ZONES_CONFIG[zid].side);
+    }
+
+    // Debounced API call
+    clearTimeout(colorTimer);
+    colorTimer = setTimeout(() => apiPost(`/zone/${zid}/color`, col), 300);
+  }
+
+  let colorTimer = null;
+  canvas.addEventListener('mousedown', e => { pickColor(e); canvas.addEventListener('mousemove', pickColor); });
+  canvas.addEventListener('mouseup', () => canvas.removeEventListener('mousemove', pickColor));
+  canvas.addEventListener('touchstart', pickColor, { passive: true });
+  canvas.addEventListener('touchmove', pickColor, { passive: true });
+
+  // Brightness slider
+  const briSlider = document.getElementById('pp-bri');
+  if (briSlider) {
+    let briTimer = null;
+    briSlider.addEventListener('input', e => {
+      const val = parseInt(e.target.value);
+      document.getElementById('pp-bri-val').textContent = Math.round(val/255*100) + '%';
+      if (appState[zid]) appState[zid].brightness = val;
+      renderSide(ZONES_CONFIG[zid].side);
+      updateZoneCard(zid, appState[zid]);
+      clearTimeout(briTimer);
+      briTimer = setTimeout(() => apiPost(`/zone/${zid}/brightness`, { value: val }), 300);
+    });
+  }
+
+  // Speed slider
+  const speedSlider = document.getElementById('pp-speed');
+  if (speedSlider) {
+    let speedTimer = null;
+    speedSlider.addEventListener('input', e => {
+      const val = parseInt(e.target.value);
+      document.getElementById('pp-speed-val').textContent = Math.round(val/255*100) + '%';
+      clearTimeout(speedTimer);
+      speedTimer = setTimeout(() => apiPost(`/zone/${zid}/speed`, { value: val }), 300);
+    });
+  }
+
+  // White temperature slider — converts kelvin → display color → sends /color
+  const tempSlider = document.getElementById('pp-temp');
+  if (tempSlider) {
+    let tempTimer = null;
+    tempSlider.addEventListener('input', e => {
+      const k = parseInt(e.target.value);
+      const valEl = document.getElementById('pp-temp-val');
+      if (valEl) valEl.textContent = k + 'K';
+      const col = kelvinToDisplayColor(k);
+      if (appState[zid]) {
+        appState[zid].kelvin = k;
+        appState[zid].color = col;
+        appState[zid].effect = null;
+      }
+      const prev = document.getElementById('color-preview');
+      if (prev) {
+        prev.style.background = `rgb(${col.r},${col.g},${col.b})`;
+        prev.style.color = luminance(col) > 0.4 ? '#000' : '#fff';
+        prev.textContent = `rgb(${col.r}, ${col.g}, ${col.b})`;
+      }
+      updateEffectButtons(null);
+      updateZoneCard(zid, appState[zid]);
+      renderSide(ZONES_CONFIG[zid].side);
+      clearTimeout(tempTimer);
+      tempTimer = setTimeout(() => apiPost(`/zone/${zid}/color`, col), 300);
+    });
+  }
+}
+
+function drawWheelCursor(ctx, cx, cy, r, c) {
+  // Re-derive approximate position from color (simplified — places cursor near edge)
+  const angle = (Math.atan2(c.g - c.b, c.r - (c.g + c.b) / 2) * 180 / Math.PI + 360) % 360;
+  const sat = Math.max(c.r, c.g, c.b) === 0 ? 0 :
+    (Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b)) / Math.max(c.r, c.g, c.b);
+  const rad = (angle - 90) * Math.PI / 180;
+  const d = sat * r * 0.85;
+  const mx = cx + Math.cos(rad) * d;
+  const my = cy + Math.sin(rad) * d;
+
+  ctx.beginPath();
+  ctx.arc(mx, my, 8, 0, Math.PI * 2);
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.fillStyle = `rgb(${c.r},${c.g},${c.b})`;
+  ctx.fill();
+}
+
+function updateEffectButtons(activeEffect) {
+  document.querySelectorAll('.effect-btn').forEach(btn => btn.classList.remove('active'));
+  if (!activeEffect || activeEffect === 0) {
+    const sb = document.querySelector('.effect-btn');
+    if (sb) sb.classList.add('active');
+  } else {
+    const btn = document.getElementById(`eff-btn-${activeEffect}`);
+    if (btn) btn.classList.add('active');
+  }
+}
+
+async function setEffect(preset) {
+  const zid = activePopupZone;
+  if (!zid || !appState[zid]) return;
+
+  updateEffectButtons(preset);
+  const speedRow = document.getElementById('speed-row');
+  if (speedRow) speedRow.className = `slider-row speed-row ${preset > 0 ? 'visible' : ''}`;
+
+  if (preset === 0) {
+    const c = appState[zid].color || { r: 255, g: 255, b: 255 };
+    appState[zid].effect = null;
+    await apiPost(`/zone/${zid}/color`, c);
+  } else {
+    appState[zid].effect = preset;
+    await apiPost(`/zone/${zid}/effect`, { preset });
+  }
+  updateZoneCard(zid, appState[zid]);
+  updateEffectLoop();
+  renderSide(ZONES_CONFIG[zid].side);
+}
+
+// ── Tunable popup ──────────────────────────────────────────────────────────
+function buildTunablePopup(zid, zstate) {
+  const on = zstate.on;
+  const bri = zstate.brightness || 200;
+  const k = zstate.kelvin || 4000;
+  return `
+    <div class="popup-row">
+      <span class="popup-row-label">Power</span>
+      <button class="popup-power-btn ${on ? 'on' : 'off'}" id="pp-power" onclick="popupTogglePower()">${on ? 'ON' : 'OFF'}</button>
+    </div>
+    <div class="popup-row">
+      <span class="popup-row-label">Brightness</span>
+      <input type="range" style="flex:1" id="pp-bri" min="0" max="255" value="${bri}">
+      <span id="pp-bri-val" style="min-width:36px;text-align:right;font-weight:600">${Math.round(bri/255*100)}%</span>
+    </div>
+    <div class="temp-slider-wrap">
+      <div style="font-size:13px;font-weight:600;color:var(--text-dim);margin-bottom:10px;letter-spacing:0.5px">Color Temperature</div>
+      <div class="temp-track">
+        <input type="range" class="temp-range" id="pp-temp" min="2000" max="6500" value="${k}" step="100">
+      </div>
+      <div class="temp-labels"><span>2000K Amber</span><span>6500K Cool</span></div>
+      <div class="temp-value" id="pp-temp-val">${k}K</div>
+    </div>`;
+}
+
+function initTempSlider(zid, zstate) {
+  const briSlider = document.getElementById('pp-bri');
+  if (briSlider) {
+    let briTimer = null;
+    briSlider.addEventListener('input', e => {
+      const val = parseInt(e.target.value);
+      document.getElementById('pp-bri-val').textContent = Math.round(val/255*100) + '%';
+      if (appState[zid]) appState[zid].brightness = val;
+      renderSide(ZONES_CONFIG[zid].side);
+      updateZoneCard(zid, appState[zid]);
+      clearTimeout(briTimer);
+      briTimer = setTimeout(() => apiPost(`/zone/${zid}/brightness`, { value: val }), 300);
+    });
+  }
+
+  const tempSlider = document.getElementById('pp-temp');
+  if (tempSlider) {
+    let tempTimer = null;
+    tempSlider.addEventListener('input', e => {
+      const k = parseInt(e.target.value);
+      document.getElementById('pp-temp-val').textContent = k + 'K';
+      if (appState[zid]) appState[zid].kelvin = k;
+      updateZoneCard(zid, appState[zid]);
+      renderSide(ZONES_CONFIG[zid].side);
+      clearTimeout(tempTimer);
+      tempTimer = setTimeout(() => apiPost(`/zone/${zid}/temperature`, { kelvin: k }), 300);
+    });
+  }
+}
+
+async function popupTogglePower() {
+  const zid = activePopupZone;
+  if (!zid || !appState[zid]) return;
+  const newOn = !appState[zid].on;
+  appState[zid].on = newOn;
+  const btn = document.getElementById('pp-power');
+  if (btn) { btn.textContent = newOn ? 'ON' : 'OFF'; btn.className = `popup-power-btn ${newOn ? 'on' : 'off'}`; }
+  updateZoneCard(zid, appState[zid]);
+  syncGroupSliders();
+  renderSide(ZONES_CONFIG[zid].side);
+  await apiPost(`/zone/${zid}/power`, { on: newOn });
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+async function init() {
+  buildZoneCards();
+  bindGroupSlider('slider-all', 'all', 'all-pct');
+  bindGroupSlider('slider-top', 'top', 'top-pct');
+  bindGroupSlider('slider-mid', 'mid', 'mid-pct');
+  bindGroupSlider('slider-bot', 'bot', 'bot-pct');
+  addCanvasTap('left');
+  addCanvasTap('right');
+
+  // Night control initial state
+  document.getElementById('night-control').style.display = 'none';
+
+  await loadImages();
+
+  if (IS_DEMO) {
+    initDemoState();
+  } else {
+    const data = await apiGet('/status');
+    if (data) applyState(data);
+    else initDemoState(); // fallback if server unreachable
+    setInterval(pollStatus, 3000);
+  }
+}
+
+init();
+</script>
+</body>
+</html>
