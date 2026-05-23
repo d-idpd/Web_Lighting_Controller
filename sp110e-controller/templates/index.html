@@ -878,7 +878,7 @@ function loadImages() {
     // Flask: absolute /static/images/  |  demo: up one level from templates/
     const basePath = IS_DEMO ? '../static/images/' : '/static/images/';
     img.src = basePath + name + ext;
-    img.onload  = () => { images[name] = img; resolve(); };
+    img.onload  = () => { images[name] = img; renderAll(); resolve(); };
     img.onerror = () => { images[name] = null; resolve(); };
   }));
   return Promise.all(promises);
@@ -1723,7 +1723,8 @@ async function init() {
   // Night control initial state
   document.getElementById('night-control').style.display = 'none';
 
-  await loadImages();
+  // Load images progressively — each one triggers renderAll() as it arrives
+  loadImages();
 
   if (IS_DEMO) {
     initDemoState();
